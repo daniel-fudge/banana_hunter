@@ -37,6 +37,11 @@ The task is episodic, and in order to solve the environment, the agent must get 
 _Note this GitHub repository and project was completed in a Windows 10 environment_  :poop:  
 
 ### Instructions
-This project can be executed from the `Navigation.ipynb` Jupyter Notebook or executed (and debugged) from a terminal or an IDE with the `run.py` script.  
-The Jupyter Notebook is a good way to step through the process with a user friendly description.  The script can be used if you don't like Notebooks or would like to dig into the code with an IDE. 
+This project can be executed from the `Navigation.ipynb` Jupyter Notebook or executed (and debugged) from a terminal or an IDE with the `test.py` and `play.py` scripts.  
+  
+The Jupyter Notebook is a good way to step through the process with a user friendly description.  The scripts can be used if you don't like Notebooks or would like to dig into the code with an IDE. 
+
+The `test.py` script performs the training and testing of the DRL model.  
+
+The `play.py` script starts the environment and allows the user to be the _Banana Hunter!!!_.
 
