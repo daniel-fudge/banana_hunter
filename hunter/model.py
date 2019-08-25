@@ -1,17 +1,19 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as nn_f
+
 
 class QNetwork(nn.Module):
     """Actor (Policy) Model."""
 
-    def __init__(self, state_size, action_size, seed, h_sizes=[64, 64]):
+    def __init__(self, state_size, action_size, seed, h_sizes):
         """Initialize parameters and build model.
-        Params
-        ======
-            state_size (int): Dimension of each state
-            action_size (int): Dimension of each action
-            seed (int): Random seed
+
+        Args:
+            state_size (int): Dimension of each state.
+            action_size (int): Dimension of each action.
+            seed (int): Random seed.
+            h_sizes (tuple): The number of nodes for each hidden layer.
         """
         super(QNetwork, self).__init__()
         self.seed = torch.manual_seed(seed)
@@ -21,11 +23,16 @@ class QNetwork(nn.Module):
         self.hidden_layers.extend([nn.Linear(h1, h2) for h1, h2 in layer_sizes])
         self.output = nn.Linear(h_sizes[-1], action_size)
 
-        # self.dropout = nn.Dropout(p=0.5)
-        
     def forward(self, x):
+        """The forward propagation method.
+
+        Args:
+            x (array_like): The current state.
+
+        Returns:
+            torch.tensor:  The final output of the network.
+        """
         for linear in self.hidden_layers:
-            x = F.relu(linear(x))
-            # x = self.dropout(x)
-        
+            x = nn_f.relu(linear(x))
+
         return self.output(x)

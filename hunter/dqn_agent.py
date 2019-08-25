@@ -2,14 +2,14 @@ import numpy as np
 import random
 from collections import namedtuple, deque
 
-from model import QNetwork
+from hunter.model import QNetwork
 
 import torch
-import torch.nn.functional as F
-import torch.optim as optim
+import torch.nn.functional as nn_f
+import torch.optim as optimizer
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
-BATCH_SIZE = 64         # minibatch size
+BATCH_SIZE = 64         # mini batch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate 
@@ -17,26 +17,27 @@ UPDATE_EVERY = 4        # how often to update the network
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class Agent():
+
+class Agent:
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, seed):
+    def __init__(self, state_size, action_size, seed, h_sizes):
         """Initialize an Agent object.
-        
-        Params
-        ======
-            state_size (int): dimension of each state
-            action_size (int): dimension of each action
-            seed (int): random seed
+
+        Args:
+            state_size (int): Dimension of each state.
+            action_size (int): Dimension of each action.
+            seed (int): Random seed.
+            h_sizes (tuple): The number of nodes for each hidden layer.
         """
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(seed)
 
         # Q-Network
-        self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
-        self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        self.qnetwork_local = QNetwork(state_size, action_size, seed, h_sizes).to(device)
+        self.qnetwork_target = QNetwork(state_size, action_size, seed, h_sizes).to(device)
+        self.optimizer = optimizer.Adam(self.qnetwork_local.parameters(), lr=LR)
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
@@ -57,16 +58,15 @@ class Agent():
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
-        
-        Params
-        ======
-            state (array_like): current state
-            eps (float): epsilon, for epsilon-greedy action selection
+
+        Args:
+            state (np.array): Current state.
+            eps (float): Epsilon, for epsilon-greedy action selection.
         """
-        state = torch.from_numpy(state).float().unsqueeze(0).to(device)
+        t_state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         self.qnetwork_local.eval()
         with torch.no_grad():
-            action_values = self.qnetwork_local(state)
+            action_values = self.qnetwork_local(t_state)
         self.qnetwork_local.train()
 
         # Epsilon-greedy action selection
@@ -83,24 +83,22 @@ class Agent():
             experiences (Tuple[torch.Variable]): tuple of (s, a, r, s', done) tuples 
             gamma (float): discount factor
         """
-        states, actions, rewards, next_states, dones = experiences
+        states, actions, rewards, next_states, done_array = experiences
 
-    
-        
         # Get max predicted Q values (for next states) from target model
         # V(S')
-        Q_s1 = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
+        q_s1 = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         
-        # Caluculate the expected value fuction
+        # Calculate the expected value function
         # r + gamma * V(s')
         # Note no value for end states
-        Q_actual = rewards + (gamma * Q_s1 * (1 - dones))
+        q_actual = rewards + (gamma * q_s1 * (1 - done_array))
 
-        # Caluculate the predicted value fuction
-        Q_predicted = self.qnetwork_local(states).gather(1, actions)
+        # Calculate the predicted value function
+        q_predicted = self.qnetwork_local(states).gather(1, actions)
         
-        # Caluculate the error
-        loss = F.mse_loss(Q_predicted, Q_actual)
+        # Calculate the error
+        loss = nn_f.mse_loss(q_predicted, q_actual)
         
         # Minimize the loss
         self.optimizer.zero_grad()
@@ -108,9 +106,10 @@ class Agent():
         self.optimizer.step()            
 
         # ------------------- update target network ------------------- #
-        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)                     
+        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
 
-    def soft_update(self, local_model, target_model, tau):
+    @staticmethod
+    def soft_update(local_model, target_model, tau):
         """Soft update model parameters.
         θ_target = τ*θ_local + (1 - τ)*θ_target
 
@@ -118,7 +117,7 @@ class Agent():
         ======
             local_model (PyTorch model): weights will be copied from
             target_model (PyTorch model): weights will be copied to
-            tau (float): interpolation parameter 
+            tau (float): interpolation parameter
         """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
@@ -155,10 +154,12 @@ class ReplayBuffer:
         states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(device)
         rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(device)
-        next_states = torch.from_numpy(np.vstack([e.next_state for e in experiences if e is not None])).float().to(device)
-        dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(device)
+        next_states = torch.from_numpy(np.vstack([e.next_state for e in experiences
+                                                  if e is not None])).float().to(device)
+        done_array = torch.from_numpy(np.vstack([e.done for e in experiences
+                                                 if e is not None]).astype(np.uint8)).float().to(device)
   
-        return (states, actions, rewards, next_states, dones)
+        return states, actions, rewards, next_states, done_array
 
     def __len__(self):
         """Return the current size of internal memory."""
