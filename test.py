@@ -6,7 +6,6 @@ Note:  You need to verify the env path is correct for you PC and OS.
 
 from collections import deque
 from hunter.dqn_agent import Agent
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from unityagents import UnityEnvironment
@@ -24,9 +23,6 @@ def train(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         eps_start (float): starting value of epsilon, for epsilon-greedy action selection
         eps_end (float): minimum value of epsilon
         eps_decay (float): multiplicative factor (per episode) for decreasing epsilon
-
-    Returns:
-        list: The resulting training scores.
     """
 
     scores = list()
@@ -38,7 +34,7 @@ def train(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         state = brain_info.vector_observations[0]
         score = 0
         for t in range(max_t):
-            action = agent.act(state, eps)
+            action = agent.act(state, eps).astype(int)
             brain_info = env.step(action)[brain_name]
             next_state = brain_info.vector_observations[0]
             reward = brain_info.rewards[0]
@@ -54,12 +50,12 @@ def train(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
         if i_episode % 100 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
-        if np.mean(scores_window) >= 200.0:
+        if np.mean(scores_window) >= 13.0:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode - 100,
                                                                                          np.mean(scores_window)))
             torch.save(agent.qnetwork_local.state_dict(), 'checkpoint.pth')
+            np.savez('scores.npz', scores)
             break
-    return scores
 
 
 def setup():
@@ -89,12 +85,4 @@ if __name__ == "__main__":
     # Perform the training
     # -----------------------------------------------------------------------------------
     print('Training the agent.')
-    training_scores = train()
-
-    # Plot the scores and save the png for the report
-    # -----------------------------------------------------------------------------------
-    plt.figure()
-    plt.plot(np.arange(len(training_scores)), training_scores)
-    plt.ylabel('Score')
-    plt.xlabel('Episode #')
-    plt.savefig('score.png')
+    train()

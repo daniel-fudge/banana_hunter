@@ -37,11 +37,20 @@ The task is episodic, and in order to solve the environment, the agent must get 
 _Note this GitHub repository and project was completed in a Windows 10 environment_  :poop:  
 
 ### Instructions
-This project can be executed from the `Navigation.ipynb` Jupyter Notebook or executed (and debugged) from a terminal or an IDE with the `test.py` and `play.py` scripts.  
+This project can be executed from the `Navigation.ipynb` Jupyter Notebook or executed (and debugged) from a terminal or an IDE with the `test.py` script.  
   
-The Jupyter Notebook is a good way to step through the process with a user friendly description.  The scripts can be used if you don't like Notebooks or would like to dig into the code with an IDE. 
+The Jupyter Notebook is a good way to step through the process with a user friendly description.  
 
-The `test.py` script performs the training and testing of the DRL model.  
+The `test.py` script performs the training and testing of the DRL model and can be used if you don't like Notebooks or would like to dig into the code with an IDE.  It can be executed with the following command:
 
-The `play.py` script starts the environment and allows the user to be the _Banana Hunter!!!_.
+    python test.py 
 
+### Pretty plot
+The raw scores are save as `scores.npz` and can be plotted and saved as `scores.png` with the command:
+
+    python plot.py  
+
+### Saved model Weights
+The trained model is saved as `checkpoint.pth` in the root directory and can be loaded with the command:  
+
+    agent.qnetwork_local.load_state_dict(torch.load('checkpoint.pth'))
