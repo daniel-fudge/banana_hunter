@@ -62,6 +62,9 @@ class Agent:
         Args:
             state (np.array): Current state.
             eps (float): Epsilon, for epsilon-greedy action selection.
+
+        Returns:
+            int32: The appropriate action for the given state.
         """
         t_state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         self.qnetwork_local.eval()
@@ -71,7 +74,7 @@ class Agent:
 
         # Epsilon-greedy action selection
         if random.random() > eps:
-            return np.argmax(action_values.cpu().data.numpy())
+            return np.argmax(action_values.cpu().data.numpy()).astype(int)
         else:
             return random.choice(np.arange(self.action_size))
 
@@ -115,9 +118,9 @@ class Agent:
 
         Params
         ======
-            local_model (PyTorch model): weights will be copied from
-            target_model (PyTorch model): weights will be copied to
-            tau (float): interpolation parameter
+            local_model (PyTorch model): Weights will be copied from.
+            target_model (PyTorch model): Weights will be copied to.
+            tau (float): Interpolation parameter.
         """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)

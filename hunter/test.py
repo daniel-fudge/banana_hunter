@@ -8,16 +8,53 @@ from collections import deque
 from hunter.dqn_agent import Agent
 import numpy as np
 import torch
-from unityagents import UnityEnvironment
-
-# !!!!!!!!! YOU MAY NEED TO EDIT THIS !!!!!!!!!!!!!!!
-env = UnityEnvironment(file_name=r"Banana_Windows_x86_64\Banana.exe")
 
 
-def train(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+def make_plot(show=False):
+    """Makes a pretty training plot call score.png.
+
+    Args:
+        show (bool):  If True, show the image.  If False, save the image.
+    """
+
+    import matplotlib.pyplot as plt
+
+    # Load the previous scores and calculated running mean of 100 runs
+    # ---------------------------------------------------------------------------------------
+    with np.load('scores.npz') as data:
+        scores = data['arr_0']
+    cum_sum = np.cumsum(np.insert(scores, 0, 0))
+    rolling_mean = (cum_sum[100:] - cum_sum[:-100]) / 100
+
+    # Make a pretty plot
+    # ---------------------------------------------------------------------------------------
+    plt.figure()
+    x_max = len(scores)
+    y_min = scores.min() - 1
+    x = np.arange(x_max)
+    plt.scatter(x, scores, s=2, c='k', label='Raw Scores', zorder=4)
+    plt.plot(x[99:], rolling_mean, lw=2, label='Rolling Mean', zorder=3)
+    plt.scatter(x_max, rolling_mean[-1], c='g', s=40, marker='*', label='Episode {}'.format(x_max), zorder=5)
+    plt.plot([0, x_max], [13, 13], lw=1, c='grey', ls='--', label='Target Score = 13', zorder=1)
+    plt.plot([x_max, x_max], [y_min, rolling_mean[-1]], lw=1, c='grey', ls='--', label=None, zorder=2)
+    plt.ylabel('Score')
+    plt.xlabel('Episode #')
+    plt.legend()
+    plt.xlim([0, x_max + 5])
+    plt.ylim(bottom=y_min)
+    if show:
+        plt.show()
+    else:
+        plt.savefig('score.png')
+    plt.close()
+
+
+def train(agent, env, n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
     """This function trains the given agent in the given environment.
 
     Args:
+        agent (Agent):  The agent to train.
+        env (unityagents.UnityEnvironment):  The training environment
         n_episodes (int): maximum number of training episodes
         max_t (int): maximum number of time steps per episode
         eps_start (float): starting value of epsilon, for epsilon-greedy action selection
@@ -34,7 +71,7 @@ def train(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         state = brain_info.vector_observations[0]
         score = 0
         for t in range(max_t):
-            action = agent.act(state, eps).astype(int)
+            action = agent.act(state, eps)
             brain_info = env.step(action)[brain_name]
             next_state = brain_info.vector_observations[0]
             reward = brain_info.rewards[0]
@@ -58,8 +95,12 @@ def train(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
             break
 
 
-def setup():
+def setup(env):
+    """Setups up the environment to train.
 
+    Args:
+        env (unityagents.UnityEnvironment):  The training environment
+    """
     # Setup the environment and print of some information for reference
     # -----------------------------------------------------------------------------------
     print('Setting up the environment.')
@@ -75,14 +116,3 @@ def setup():
     print('Setting up the agent.')
     hidden_layer_sizes = (state_size, state_size, int((state_size + action_size) / 2.0))
     return Agent(state_size=state_size, action_size=action_size, seed=0, h_sizes=hidden_layer_sizes)
-
-
-if __name__ == "__main__":
-    # Setup the environment and agent
-    # -----------------------------------------------------------------------------------
-    agent = setup()
-
-    # Perform the training
-    # -----------------------------------------------------------------------------------
-    print('Training the agent.')
-    train()
