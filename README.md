@@ -56,4 +56,4 @@ The trained model is saved as `checkpoint.pth` in the root directory and can be 
     agent.qnetwork_local.load_state_dict(torch.load('checkpoint.pth'))
     
 ### Report
-A report providing a description of the implementation, a plot of the rewards and ideas for future work can be found in `Report.md`.
+A [report](Report.md) providing a description of the implementation, a plot of the rewards and ideas for future work can be found in `Report.md`.

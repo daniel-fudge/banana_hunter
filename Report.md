@@ -29,7 +29,7 @@ The `Agent` class creates a Double Q-Learning Network from the `hunter.model.QNe
 
 The `Agent.act` method returns the appropriate Epsilon-greedy action based on the given `eps` value and the maximum state-action pair from `self.qnetwork_local`.
 
-The `Agent.learn` method is given a set of experiences, which are at tuple of (s, a, r, s', done) tuples, and a discount factor `gamma`.  From these experiences it calculates the expected Q-value as `r + gamma * V(s')`, where `V(s')` comes from the `self.qnetwork_target`.  This expected value is compared with the predicted value from `self.qnetwork_local` to determine the loss with the `torch.nn.functional.mse_loss` function.  The loss is then passed through a backward propagation and the `torch.optim.Adam` optimizer to train the `self.qnetwork_local` network.  The final step is to update the `self.qnetwork_target` weights from `self.qnetwork_local` using the given `tau` parameter and the equation `target = tau*local + (1-tau)*target`.
+The `Agent.learn` method is given a set of experiences, which are a tuple of (s, a, r, s', done) tuples, and a discount factor `gamma`.  From these experiences it calculates the expected Q-value as `r + gamma * V(s')`, where `V(s')` comes from the `self.qnetwork_target`.  This expected value is compared with the predicted value from `self.qnetwork_local` to determine the loss with the `torch.nn.functional.mse_loss` function.  The loss is then passed through a backward propagation and the `torch.optim.Adam` optimizer to train the `self.qnetwork_local` network.  The final step is to update the `self.qnetwork_target` weights from `self.qnetwork_local` using the given `tau` parameter and the equation `target = tau*local + (1-tau)*target`.
 
 ### `train` Submodule
 The `train` submodule brings the `model` and `dqn_agent` submodules together to train the agent.  
@@ -53,8 +53,24 @@ The hyperparameters used in the successful training are listed below.
 - `eps_start, eps_decay, eps_end = 1.0, 0.995, 0.01` Used to calculate the probability that the greedy action or random action is selected with the equation `eps = max(eps_end, eps_decay * eps)`.
 - `max_t = 1000` The maximum number of time steps per episode.  
 
+### Model Architecture
+The `test.setup` method creates the model architecture with three linear fully connected hidden layers based on the given state and action space sizes with the following number of nodes.  
+1. 1st layer is the same as the state space.  
+2. 2nd layer is also the same as the state space.  
+3. 3rd layer is the integer mean of the state and action spaces.  
+
+The image below illustrates this network.  Obviously, except for the output layer, the number of nodes is reduced to simplify the image.  
+
+![network](network.png)
+
 ## Plot of Rewards  
+The image below illustrates the scores of each episode as well as the running average score for the last 100 episodes.  As you can see, the algorithm solves the problem in 500 episodes by hitting a running average of 13.  
+
 ![Rewards](score.png)
 
 
 ## Ideas for Future Work
+There is still much to be done for this project.  The most obvious would be to try different architectures, including number of nodes per layer, number of layers and the activation functions.  A little script could even be written to optimize these features.  
+Prioritized learning is another interesting strategy that would be worth trying.  
+Since the noise in this environment is fairly low, I don't expect drop out to be very effective, however testing this hypothesis could be enlightening.
+And as always, tuning the hyperparameters and testing different optimizers and loss functions would most likely yield improvements.
